@@ -8,7 +8,13 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { scoreSocialCohesion } from './scs_engine.js';
-import { grokConstrue, applyConstrual, heuristicConstrue } from './construe.js';
+import {
+  grokConstrue,
+  applyConstrual,
+  heuristicConstrue,
+  shouldUseLiveGrok,
+  isGrokConfigured,
+} from './construe.js';
 import { burnhamScenario } from './scenario_burnham.js';
 import { toBurnhamMarkdown } from './report.js';
 import { HistoryStore } from './history_store.js';
@@ -89,14 +95,29 @@ async function runScore(body = {}, { construe = false } = {}) {
   input = { ...burnhamScenario(), ...input };
 
   let provenance = null;
+  let construeMeta = null;
   if (construe || body.construe) {
-    const c = body.liveGrok ? await grokConstrue(input) : heuristicConstrue(input);
+    const useLive = shouldUseLiveGrok(body);
+    const c = useLive
+      ? await grokConstrue(input)
+      : { ...heuristicConstrue(input), provenance: 'grok-heuristic', grokConfigured: isGrokConfigured() };
     input = applyConstrual(input, c);
     provenance = c.provenance;
+    construeMeta = {
+      provenance: c.provenance,
+      grokConfigured: Boolean(c.grokConfigured ?? isGrokConfigured()),
+      filledFields: c.filledFields || [],
+      discourseNote: c.discourseNote || null,
+      grokError: c.grokError || null,
+      model: c.model || null,
+      liveAttempted: useLive,
+    };
   }
 
   const result = scoreSocialCohesion(input);
   result.construeProvenance = provenance;
+  result.construe = construeMeta;
+  result.grokConfigured = isGrokConfigured();
   result.markdown = toBurnhamMarkdown(result);
   history.push(result);
   return result;
@@ -125,6 +146,18 @@ const server = http.createServer(async (req, res) => {
       service: 'primeminster-scs',
       flokkinet: 'evolve-perc-internet',
       renderService: process.env.RENDER_EXTERNAL_URL || null,
+      grokConfigured: isGrokConfigured(),
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/scs/grok-status') {
+    return json(res, 200, {
+      ok: true,
+      grokConfigured: isGrokConfigured(),
+      model: process.env.XAI_MODEL || 'grok-3-mini',
+      hint: isGrokConfigured()
+        ? 'XAI_API_KEY present — construe uses live Grok when requested'
+        : 'Set XAI_API_KEY on the host (Render env) for live Grok; heuristic runs until then',
     });
   }
 
@@ -158,20 +191,37 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/scs/construe') {
     const body = await readBody(req);
-    const input = { ...burnhamScenario(), ...body };
+    const input = {
+      ...burnhamScenario(),
+      ...body,
+      vortexText: body.vortexText ?? body.v,
+      shearText: body.shearText ?? body.s,
+      resistanceText: body.resistanceText ?? body.r,
+      flowText: body.flowText ?? body.f,
+    };
     try {
-      const c = body.liveGrok ? await grokConstrue(input) : heuristicConstrue(input);
-      return json(res, 200, { ok: true, ...c });
+      const useLive = shouldUseLiveGrok(body);
+      const c = useLive
+        ? await grokConstrue(input)
+        : { ...heuristicConstrue(input), provenance: 'grok-heuristic', grokConfigured: isGrokConfigured() };
+      return json(res, 200, {
+        ok: true,
+        ...c,
+        liveAttempted: useLive,
+        grokConfigured: isGrokConfigured(),
+      });
     } catch (e) {
       return json(res, 500, { ok: false, error: e.message });
     }
   }
 
   if (req.method === 'POST' && url.pathname === '/scs/cycle') {
-    // One perpetual-loop tick: construe blanks → score → store history
+    // One perpetual-loop tick: construe blanks → score → store history (live Grok when key set)
     const body = await readBody(req);
     try {
-      const result = await runScore({ ...body, construe: true }, { construe: true });
+      const result = await runScore({ ...body, construe: true, liveGrok: body.liveGrok !== false }, {
+        construe: true,
+      });
       return json(res, 200, { ok: true, result, historyCount: history.history.length });
     } catch (e) {
       return json(res, 500, { ok: false, error: e.message });
