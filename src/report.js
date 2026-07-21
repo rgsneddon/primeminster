@@ -2,6 +2,10 @@
  * BURNHAM.md-style Markdown report from SCS engine output.
  */
 
+function round1(n) {
+  return Math.round(Number(n) * 10) / 10;
+}
+
 export function toBurnhamMarkdown(result) {
   const c = result.constructs;
   const p1 = result.partOne;
@@ -72,7 +76,7 @@ PART THREE — Five actions to raise SCS & PROGRESSIVE (minister)
 
 ${p3.actions.map((line, i) => `${i + 1}. ${line}`).join('\n')}
 
-Expected: SCS rises toward ${Math.round(p3.withLeversMin)}–${Math.round(p3.withLeversMax)} on THE CONTINUUM.
+Expected: SCS rises from ~${result.refinedScs} toward ${round1(p3.withLeversMin)}–${round1(p3.withLeversMax)} on THE CONTINUUM.
 
 🌀 SSUCF Cycle Complete. Analysis by Evolve Chronoflux from posed scenario and construct parameters.
 

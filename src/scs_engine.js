@@ -262,14 +262,24 @@ function refinedCore(baseline, constructs, contextLean, hasQuestion) {
 
 function partThreeLevers(input, core) {
   const without = core.refinedScs;
-  const mechanicalBaseline =
-    (core.vortexScs + core.shearScs + core.resistanceScs + core.flowScs) / 4;
   const flowLift = core.flowScs / 100;
+  const constructiveLift = (core.vortexScs + core.flowScs) / 100;
   const applyLevers = input.applyLevers !== false;
-  const withMin = applyLevers
-    ? clamp(mechanicalBaseline * 0.72 + flowLift * 14, 56, 63)
-    : without;
-  const withMax = clamp(withMin + (core.vortexScs + core.flowScs) / 50, 56, 65);
+
+  // Lever band is relative to current refined SCS (always a raise when levers apply).
+  // Do not use absolute BURNHAM-era floors (56–63) that can project a drop.
+  let withMin = without;
+  let withMax = without;
+  if (applyLevers) {
+    const minDelta = clamp(1.0 + flowLift * 2.5, 1.0, 4.0);
+    const maxDelta = clamp(minDelta + 1.5 + constructiveLift * 2.0, minDelta + 1.0, 8.0);
+    withMin = clamp(without + minDelta, without + 0.5, 100);
+    withMax = clamp(without + maxDelta, withMin + 0.5, 100);
+    // Cap room near ceiling while preserving raise semantics
+    if (withMin <= without) withMin = clamp(without + 0.5, 0, 100);
+    if (withMax <= withMin) withMax = clamp(withMin + 0.5, 0, 100);
+  }
+
   const subject =
     input.topic ||
     'The SOCIAL COHESION SCORE OF ANDY BURNHAM, BEING PRIME MINISTER — UK & Ireland focus';
@@ -402,7 +412,7 @@ export function scoreSocialCohesion(rawInput = {}) {
       title: 'Part Three: Actionable Levers for Friction Reduction',
       ...levers,
       projectedWithout: `Without levers: Continued ~${round1(core.refinedScs)}/100 with recurrence risk.`,
-      projectedWith: `With levers: ${round1(levers.withLeversMin)}–${round1(levers.withLeversMax)}/100 within 3 months.`,
+      projectedWith: `With levers: rise from ~${round1(core.refinedScs)} toward ${round1(levers.withLeversMin)}–${round1(levers.withLeversMax)}/100 within 3 months.`,
     },
     historyPoint: {
       t: Date.now(),

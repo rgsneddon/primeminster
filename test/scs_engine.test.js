@@ -121,4 +121,29 @@ describe('BURNHAM-like report structure', () => {
     assert.match(md, /Regressive/i);
     assert.match(md, /Progressive/i);
   });
+
+  it('projects lever SCS as a raise above current refined SCS (not absolute 56 floor)', () => {
+    const result = scoreSocialCohesion(burnhamScenario());
+    const p3 = result.partThree;
+    assert.ok(p3.withoutLeversScs >= 0);
+    assert.ok(
+      p3.withLeversMin > p3.withoutLeversScs,
+      `withLeversMin ${p3.withLeversMin} must exceed without ${p3.withoutLeversScs}`,
+    );
+    assert.ok(
+      p3.withLeversMax >= p3.withLeversMin,
+      `withLeversMax ${p3.withLeversMax} >= min ${p3.withLeversMin}`,
+    );
+    assert.ok(
+      p3.withLeversMin > result.refinedScs,
+      `lever min ${p3.withLeversMin} must exceed refinedScs ${result.refinedScs}`,
+    );
+    const md = toBurnhamMarkdown(result);
+    assert.match(md, /rises from/i);
+    assert.match(md, new RegExp(String(result.refinedScs).replace('.', '\\.')));
+    assert.ok(
+      p3.withLeversMax > result.refinedScs,
+      'report lever ceiling must be above current refined SCS',
+    );
+  });
 });
