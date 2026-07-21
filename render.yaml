@@ -1,0 +1,21 @@
+# Render Blueprint — Burnham-PM Chronoflux SCS web app (primeminster)
+# Deploy: https://dashboard.render.com/blueprints
+# Or: https://render.com/deploy?repo=https://github.com/rgsneddon/primeminster
+services:
+  - type: web
+    name: primeminster
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      # Optional live Grok construe — set in Render dashboard, never commit secrets:
+      # - key: XAI_API_KEY
+      #   sync: false
