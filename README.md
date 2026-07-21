@@ -18,6 +18,26 @@ https://render.com/deploy?repo=https://github.com/rgsneddon/primeminster
 
 Env var **names** only (set secrets in Render dashboard, never commit): `PORT`, `NODE_VERSION`, `XAI_API_KEY` (optional live Grok).
 
+### Faster loads (cold start) — keep-warm, not Flyclient
+
+**Flyclient** (blockchain light-client / MMR sampling for PoW chains) does **not** speed up this web page or wake a sleeping Render dyno. Free-tier slowness is almost always **idle sleep** after ~15 minutes with no traffic.
+
+**Appropriate mitigation:** ping `/health` every ~12 minutes so the service stays warm.
+
+```bash
+# dual probe (health + burnham) twice
+npm run keep-warm:once
+
+# long-running local pinger (every 12 min)
+npm run keep-warm
+
+# PowerShell
+.\scripts\keep_warm.ps1 -Once
+.\scripts\keep_warm.ps1
+```
+
+GitHub Actions [`.github/workflows/keep-warm.yml`](./.github/workflows/keep-warm.yml) schedules public GETs (no secrets). For true always-on, upgrade the Render plan.
+
 ## Features
 
 - **SCS engine** — Evolve-style hydrodynamic Chronoflux scoring from observed discourse fields **v / f / s** (+ resistance)

@@ -7,6 +7,8 @@
     "start": "node src/server.js",
     "scs": "node scripts/run_scs.js",
     "construe:loop": "node scripts/perpetual_construe.js",
+    "keep-warm": "node scripts/keep_warm.js",
+    "keep-warm:once": "node scripts/keep_warm.js --times 2",
     "test": "node --test test/*.test.js",
     "verify": "node scripts/verify_all.js"
   },

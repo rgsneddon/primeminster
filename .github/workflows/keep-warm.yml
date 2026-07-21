@@ -1,0 +1,25 @@
+# Ping live Render health so free-tier is less likely to sleep.
+# No secrets required — public HTTPS GET only.
+# Flyclient is not used (blockchain light-client protocol ≠ HTTP cold start).
+name: keep-warm-render
+
+on:
+  schedule:
+    # Every 12 minutes (GitHub may delay slightly)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Warm health + burnham
+        env:
+          KEEP_WARM_BASE_URL: https://evolve-perc-internet.onrender.com
+        run: node scripts/keep_warm.js --times 1
