@@ -2,6 +2,22 @@
 
 Dynamic Chronoflux **social cohesion** analysis for the scenario of **@AndyBurnham** as Prime Minister, with graphs in the structural family of desktop `BURNHAM.md`.
 
+## Live on Render
+
+| Page | URL |
+|------|-----|
+| **Burnham UI** | https://evolve-perc-internet.onrender.com/burnham |
+| Health | https://evolve-perc-internet.onrender.com/health |
+| SCS latest | https://evolve-perc-internet.onrender.com/scs/latest |
+| SCS score | `POST` https://evolve-perc-internet.onrender.com/scs/score |
+
+Hosted on the existing **evolve-perc-internet** flokkinet node (`perc_chain` auto-deploy from [rgsneddon/evolve](https://github.com/rgsneddon/evolve)).
+
+Dedicated Blueprint for this repo: [`render.yaml`](./render.yaml) — one-click:  
+https://render.com/deploy?repo=https://github.com/rgsneddon/primeminster
+
+Env var **names** only (set secrets in Render dashboard, never commit): `PORT`, `NODE_VERSION`, `XAI_API_KEY` (optional live Grok).
+
 ## Features
 
 - **SCS engine** — Evolve-style hydrodynamic Chronoflux scoring from observed discourse fields **v / f / s** (+ resistance)
