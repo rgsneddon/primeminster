@@ -15,11 +15,6 @@
       --accent: #6c63ff;
       --prog: #00d4aa;
       --reg: #f59e0b;
-      --danger: #ef4444;
-      --omega: #7c6cff;
-      --sigma: #ff6b9d;
-      --itau: #f59e0b;
-      --jmu: #00d4aa;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -55,8 +50,21 @@
       border-radius: 12px;
       padding: 14px 16px;
     }
+    .card.moving-score {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(108, 99, 255, 0.25);
+    }
+    .card.moving-score.is-animating {
+      animation: scorePulse 0.9s ease-in-out;
+    }
+    @keyframes scorePulse {
+      0% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.55); }
+      70% { box-shadow: 0 0 0 10px rgba(108, 99, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0); }
+    }
     .card .label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .card .value { font-size: 1.65rem; font-weight: 700; margin-top: 4px; }
+    .card .value { font-size: 1.65rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .card .value[data-animate="scs"] { color: #c4bfff; transition: color 0.2s; }
     .card .hint { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
     .charts {
       display: grid;
@@ -87,6 +95,25 @@
     .panel h3 { font-size: 0.9rem; color: var(--accent); margin: 10px 0 4px; }
     .panel p, .panel li { color: var(--text); font-size: 0.9rem; margin-bottom: 4px; }
     .panel ul { padding-left: 1.2rem; }
+    .part-diagram {
+      margin: 12px 0 16px;
+      background: #0f121c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 220px;
+    }
+    .part-diagram h3 {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .part-diagram canvas {
+      max-height: 200px;
+      width: 100% !important;
+    }
     label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 3px; }
     textarea, input[type="text"] {
       width: 100%;
@@ -137,17 +164,22 @@
         <span class="badge">Chronoflux SCS</span>
         <span class="badge">@AndyBurnham PM</span>
         <span class="badge">SSUCF</span>
+        <span class="badge">Moving score</span>
         <span class="badge" id="api-badge">API…</span>
       </div>
       <h1>Social Cohesion — Andy Burnham as Prime Minister</h1>
       <p class="sub">
-        Dynamic graphs from Evolve Chronoflux scoring of observed social discourse fields
-        (v / f / s + resistance). Structural family of desktop BURNHAM.md.
+        Moving refined SCS and diagrams for each conclusion (Part One / Two / Three)
+        from Evolve Chronoflux scoring of observed discourse fields (v / f / s).
       </p>
     </header>
 
     <div class="grid" id="kpi">
-      <div class="card"><div class="label">Refined SCS</div><div class="value" id="kpi-scs">—</div><div class="hint">0–100</div></div>
+      <div class="card moving-score" id="kpi-scs-card" data-moving-score="true">
+        <div class="label">Refined SCS (moving)</div>
+        <div class="value" id="kpi-scs" data-animate="scs" data-score-live="0">—</div>
+        <div class="hint">0–100 · animates on update</div>
+      </div>
       <div class="card"><div class="label">Regressive</div><div class="value" id="kpi-reg">—</div><div class="hint">share %</div></div>
       <div class="card"><div class="label">Progressive</div><div class="value" id="kpi-prog">—</div><div class="hint">share %</div></div>
       <div class="card"><div class="label">Lean</div><div class="value" id="kpi-lean" style="font-size:1.1rem">—</div><div class="hint">continuum</div></div>
@@ -213,16 +245,28 @@
       <div id="status"></div>
     </div>
 
-    <div class="panel" id="part-one">
+    <div class="panel" id="part-one" data-conclusion="part-one">
       <h2>Part One: Baseline Parameter Mapping</h2>
+      <div class="part-diagram" data-part-diagram="one">
+        <h3>Part One diagram — baseline constructs</h3>
+        <canvas id="chart-part-one" data-conclusion-chart="part-one"></canvas>
+      </div>
       <div id="part-one-body"></div>
     </div>
-    <div class="panel" id="part-two">
+    <div class="panel" id="part-two" data-conclusion="part-two">
       <h2>Part Two: Broader Political Continuum Integration</h2>
+      <div class="part-diagram" data-part-diagram="two">
+        <h3>Part Two diagram — continuum refinement</h3>
+        <canvas id="chart-part-two" data-conclusion-chart="part-two"></canvas>
+      </div>
       <div id="part-two-body"></div>
     </div>
-    <div class="panel" id="part-three">
+    <div class="panel" id="part-three" data-conclusion="part-three">
       <h2>Part Three: Actionable Levers</h2>
+      <div class="part-diagram" data-part-diagram="three">
+        <h3>Part Three diagram — lever band</h3>
+        <canvas id="chart-part-three" data-conclusion-chart="part-three"></canvas>
+      </div>
       <div id="part-three-body"></div>
     </div>
     <div class="panel">
@@ -231,10 +275,33 @@
     </div>
   </div>
 
-  <script>
-    const API = ''; // same origin
+  <script type="module">
+    import {
+      interpolateScore,
+      tweenSteps,
+      partOneDiagram,
+      partTwoDiagram,
+      partThreeDiagram,
+      conclusionDiagrams,
+      round1,
+    } from './view_model.js';
+
+    // Expose for headless / verification probes
+    window.__scsViewModel = {
+      interpolateScore,
+      tweenSteps,
+      partOneDiagram,
+      partTwoDiagram,
+      partThreeDiagram,
+      conclusionDiagrams,
+    };
+
+    const API = '';
     let charts = {};
     let latest = null;
+    let displayedScs = null;
+    let scoreAnimFrame = null;
+    let scoreAnimToken = 0;
 
     function $(id) { return document.getElementById(id); }
 
@@ -268,8 +335,71 @@
       };
     }
 
-    function updateKpis(r) {
-      $('kpi-scs').textContent = r.refinedScs;
+    /**
+     * Moving score: tween KPI refined SCS with requestAnimationFrame.
+     * Intermediate frames write data-score-live + textContent.
+     */
+    function animateScoreTo(target, { durationMs = 900, force = false } = {}) {
+      const el = $('kpi-scs');
+      const card = $('kpi-scs-card');
+      const to = Number(target);
+      if (!Number.isFinite(to)) return;
+
+      const from =
+        displayedScs == null || Number.isNaN(Number(displayedScs))
+          ? (force ? 0 : to)
+          : Number(displayedScs);
+
+      if (scoreAnimFrame) cancelAnimationFrame(scoreAnimFrame);
+      const token = ++scoreAnimToken;
+      const start = performance.now();
+
+      if (card) {
+        card.classList.add('is-animating');
+        card.dataset.animating = 'true';
+      }
+
+      // If first paint and from===to, still flash one intermediate path via 0→to when force
+      const startVal = from === to && force ? Math.max(0, to - 8) : from;
+
+      function frame(now) {
+        if (token !== scoreAnimToken) return;
+        const t = Math.min(1, (now - start) / durationMs);
+        const value = interpolateScore(startVal, to, t);
+        const shown = round1(value);
+        displayedScs = shown;
+        el.textContent = shown;
+        el.dataset.scoreLive = String(shown);
+        el.dataset.animateProgress = String(t);
+        if (charts.gauge) {
+          charts.gauge.data.datasets[0].data = [shown, Math.max(0, 100 - shown)];
+          charts.gauge.update('none');
+        }
+        if (t < 1) {
+          scoreAnimFrame = requestAnimationFrame(frame);
+        } else {
+          displayedScs = to;
+          el.textContent = round1(to);
+          el.dataset.scoreLive = String(round1(to));
+          el.dataset.animateProgress = '1';
+          if (card) {
+            card.classList.remove('is-animating');
+            card.dataset.animating = 'false';
+          }
+          scoreAnimFrame = null;
+        }
+      }
+      scoreAnimFrame = requestAnimationFrame(frame);
+    }
+
+    function updateKpis(r, { animate = true } = {}) {
+      if (animate) {
+        animateScoreTo(r.refinedScs, { force: displayedScs == null });
+      } else {
+        displayedScs = r.refinedScs;
+        $('kpi-scs').textContent = r.refinedScs;
+        $('kpi-scs').dataset.scoreLive = String(r.refinedScs);
+      }
       $('kpi-reg').textContent = r.regressivePct + '%';
       $('kpi-prog').textContent = r.progressivePct + '%';
       $('kpi-lean').textContent = r.lean;
@@ -294,7 +424,7 @@
         <h3>Shear Refinement</h3><p>${esc(p2.shearRefinement)}</p>
         <h3>Resistance &amp; Flow</h3><p>${esc(p2.resistanceFlow)}</p>
         <p>Refined ~${p2.refinedScs}/100 · Reg ${p2.regressivePct}% / Prog ${p2.progressivePct}%</p>`;
-      const ints = (p3.interventions || []).map((x, i) => `<li>${esc(x)}</li>`).join('');
+      const ints = (p3.interventions || []).map((x) => `<li>${esc(x)}</li>`).join('');
       const acts = (p3.actions || []).map((x) => `<li>${esc(x)}</li>`).join('');
       $('part-three-body').innerHTML = `
         <h3>Interventions</h3><ul>${ints}</ul>
@@ -349,10 +479,7 @@
         options: {
           ...common,
           cutout: '70%',
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false },
-          },
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
         },
       });
       charts.history = new Chart($('chart-history'), {
@@ -393,6 +520,81 @@
           plugins: { legend: { display: false } },
         },
       });
+
+      // Per-conclusion diagrams
+      charts.partOne = new Chart($('chart-part-one'), {
+        type: 'bar',
+        data: {
+          labels: partOneDiagram({}).labels,
+          datasets: [{ label: 'Part One', data: [0, 0, 0, 0, 0, 0], backgroundColor: partOneDiagram({}).colors }],
+        },
+        options: {
+          ...common,
+          scales: {
+            x: { ticks: { color: '#9aa3b8', maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+            y: { min: 0, max: 100, ticks: { color: '#9aa3b8' }, grid: { color: '#1e2436' } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+      charts.partTwo = new Chart($('chart-part-two'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Regressive %', 'Progressive %'],
+          datasets: [{ data: [50, 50], backgroundColor: ['#f59e0b', '#00d4aa'], borderWidth: 0 }],
+        },
+        options: {
+          ...common,
+          plugins: {
+            legend: { labels: { color: '#9aa3b8' } },
+            title: {
+              display: true,
+              text: 'Refined SCS —',
+              color: '#c4bfff',
+              font: { size: 14 },
+            },
+          },
+        },
+      });
+      charts.partThree = new Chart($('chart-part-three'), {
+        type: 'bar',
+        data: {
+          labels: partThreeDiagram({}).labels,
+          datasets: [{ label: 'Part Three', data: [0, 0, 0], backgroundColor: partThreeDiagram({}).colors }],
+        },
+        options: {
+          ...common,
+          scales: {
+            x: { ticks: { color: '#9aa3b8' }, grid: { display: false } },
+            y: { min: 0, max: 100, ticks: { color: '#9aa3b8' }, grid: { color: '#1e2436' } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    function updateConclusionDiagrams(r) {
+      ensureCharts();
+      const d1 = partOneDiagram(r);
+      const d2 = partTwoDiagram(r);
+      const d3 = partThreeDiagram(r);
+      charts.partOne.data.labels = d1.labels;
+      charts.partOne.data.datasets[0].data = d1.values;
+      charts.partOne.data.datasets[0].backgroundColor = d1.colors;
+      charts.partOne.update();
+      charts.partTwo.data.datasets[0].data = [d2.split.regressive, d2.split.progressive];
+      if (charts.partTwo.options.plugins?.title) {
+        charts.partTwo.options.plugins.title.text = `Refined SCS ${d2.values[2]}`;
+      }
+      charts.partTwo.update();
+      charts.partThree.data.labels = d3.labels;
+      charts.partThree.data.datasets[0].data = d3.values;
+      charts.partThree.data.datasets[0].backgroundColor = d3.colors;
+      charts.partThree.update();
+      // Mark surfaces as populated for verification
+      document.querySelectorAll('[data-part-diagram]').forEach((el) => {
+        el.dataset.populated = 'true';
+      });
     }
 
     function updateCharts(r, history) {
@@ -402,6 +604,7 @@
       charts.radar.update();
       charts.split.data.datasets[0].data = [r.regressivePct, r.progressivePct];
       charts.split.update();
+      // gauge follows moving score when animating; set final baseline here too
       charts.gauge.data.datasets[0].data = [r.refinedScs, Math.max(0, 100 - r.refinedScs)];
       charts.gauge.update();
       const p3 = r.partThree || {};
@@ -419,22 +622,21 @@
       charts.history.data.datasets[1].data = hist.map((h) => h.regressivePct);
       charts.history.data.datasets[2].data = hist.map((h) => h.progressivePct);
       charts.history.update();
+      updateConclusionDiagrams(r);
     }
 
-    function applyResult(r, history) {
+    function applyResult(r, history, { animate = true } = {}) {
       latest = r;
-      updateKpis(r);
+      window.__scsLatest = r;
+      updateKpis(r, { animate });
       updateParts(r);
       updateCharts(r, history);
-      if (r.scenario) {
-        // keep user edits unless empty form
-      }
     }
 
     async function loadLatest() {
       const data = await api('/scs/latest');
       if (data.latest) {
-        applyResult(data.latest, data.history);
+        applyResult(data.latest, data.history, { animate: true });
         if (data.latest.scenario) {
           fillForm({
             posedQuestion: data.latest.scenario.posedQuestion,
@@ -462,7 +664,7 @@
           body: JSON.stringify(body),
         });
         const snap = await api('/scs/latest');
-        applyResult(r, snap.history);
+        applyResult(r, snap.history, { animate: true });
         setStatus(`SCS ${r.refinedScs}/100 · ${r.lean} · ${r.construeProvenance || 'direct'}`);
       } catch (e) {
         setStatus('Error: ' + e.message);
@@ -480,7 +682,7 @@
           body: JSON.stringify(body),
         });
         const snap = await api('/scs/latest');
-        applyResult(r.result, snap.history);
+        applyResult(r.result, snap.history, { animate: true });
         setStatus(`Tick SCS ${r.result.refinedScs} · history ${r.historyCount}`);
       } catch (e) {
         setStatus('Error: ' + e.message);
