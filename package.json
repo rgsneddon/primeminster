@@ -1,0 +1,16 @@
+{
+  "name": "primeminster",
+  "version": "1.0.0",
+  "description": "Burnham-PM social cohesion web page with Chronoflux SCS, perpetual Grok construe, and flokkinet/Render integration",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "scs": "node scripts/run_scs.js",
+    "construe:loop": "node scripts/perpetual_construe.js",
+    "test": "node --test test/*.test.js",
+    "verify": "node scripts/verify_all.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
