@@ -13,6 +13,9 @@ import {
   conclusionDiagrams,
   loadingPresentation,
   initialLoadingState,
+  chartConfig,
+  buildBarChartSvg,
+  capHistory,
 } from '../src/view_model.js';
 import { scoreSocialCohesion } from '../src/scs_engine.js';
 import { burnhamScenario } from '../src/scenario_burnham.js';
@@ -52,6 +55,34 @@ describe('page LOADING presentation state', () => {
     const err = loadingPresentation(true, 'error');
     assert.equal(err.visible, false);
     assert.equal(err.reason, 'fetch-error');
+  });
+});
+
+describe('lightweight chart config (no Chart.js CDN)', () => {
+  it('ships svg-bars engine without CDN animations', () => {
+    const cfg = chartConfig();
+    assert.equal(cfg.engine, 'svg-bars');
+    assert.equal(cfg.cdn, false);
+    assert.equal(cfg.animations, false);
+    assert.ok(cfg.maxSurfaces <= 4);
+    assert.ok(cfg.fetchTimeoutMs > 0 && cfg.fetchTimeoutMs <= 30000);
+  });
+
+  it('buildBarChartSvg encodes real construct scores from SCS payload', () => {
+    const result = scoreSocialCohesion(burnhamScenario());
+    const d1 = partOneDiagram(result);
+    const svg = buildBarChartSvg(d1.labels.slice(0, 4), d1.values.slice(0, 4), d1.colors);
+    assert.match(svg, /data-chart-engine="svg-bars"/);
+    assert.match(svg, /<svg/);
+    assert.ok(!svg.includes('chart.js'));
+    assert.ok(svg.includes(String(Math.floor(d1.values[0]))));
+  });
+
+  it('capHistory bounds length for light history', () => {
+    const big = Array.from({ length: 50 }, (_, i) => ({ refinedScs: i }));
+    const capped = capHistory(big, 12);
+    assert.equal(capped.length, 12);
+    assert.equal(capped[0].refinedScs, 38);
   });
 });
 
