@@ -122,4 +122,35 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Page loading presentation state for the top LOADING… tag.
+ * Pure helper — unit-tested without DOM.
+ *
+ * @param {boolean} currentlyVisible
+ * @param {'start'|'success'|'error'|'idle'} event
+ * @returns {{ visible: boolean, label: string, reason: string }}
+ */
+export function loadingPresentation(currentlyVisible, event) {
+  switch (event) {
+    case 'start':
+      return { visible: true, label: 'LOADING…', reason: 'fetch-start' };
+    case 'success':
+      return { visible: false, label: 'LOADING…', reason: 'fetch-success' };
+    case 'error':
+      return { visible: false, label: 'LOADING…', reason: 'fetch-error' };
+    case 'idle':
+    default:
+      return {
+        visible: Boolean(currentlyVisible),
+        label: 'LOADING…',
+        reason: 'idle',
+      };
+  }
+}
+
+/** Initial page paint: LOADING should be visible before first data. */
+export function initialLoadingState() {
+  return loadingPresentation(false, 'start');
+}
+
 export { round1, easeInOut };

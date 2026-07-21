@@ -11,6 +11,8 @@ import {
   partTwoDiagram,
   partThreeDiagram,
   conclusionDiagrams,
+  loadingPresentation,
+  initialLoadingState,
 } from '../src/view_model.js';
 import { scoreSocialCohesion } from '../src/scs_engine.js';
 import { burnhamScenario } from '../src/scenario_burnham.js';
@@ -30,6 +32,26 @@ describe('moving score tween', () => {
     assert.equal(steps[steps.length - 1], 70);
     const mids = steps.slice(1, -1);
     assert.ok(mids.every((v) => v > 50 && v < 70), `mids strictly between: ${mids}`);
+  });
+});
+
+describe('page LOADING presentation state', () => {
+  it('starts visible with LOADING label and hides on success and error', () => {
+    const boot = initialLoadingState();
+    assert.equal(boot.visible, true);
+    assert.match(boot.label, /LOADING/i);
+
+    const start = loadingPresentation(false, 'start');
+    assert.equal(start.visible, true);
+    assert.equal(start.reason, 'fetch-start');
+
+    const ok = loadingPresentation(true, 'success');
+    assert.equal(ok.visible, false);
+    assert.equal(ok.reason, 'fetch-success');
+
+    const err = loadingPresentation(true, 'error');
+    assert.equal(err.visible, false);
+    assert.equal(err.reason, 'fetch-error');
   });
 });
 
